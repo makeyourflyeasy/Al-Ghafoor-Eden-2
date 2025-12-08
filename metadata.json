@@ -1,0 +1,7 @@
+{
+  "name": "Al-Ghafoor-Eden",
+  "description": "A comprehensive management application for residents and union committee of Al Ghafoor Eden. It handles maintenance tracking, payments, expenses, notices, and user management for different roles like resident, admin, guard, and accountant.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

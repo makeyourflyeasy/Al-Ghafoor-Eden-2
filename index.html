@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Al Ghafoor Eden</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                DEFAULT: '#0284c7', // Electric Blue (Primary Action)
+                '50': '#f0f9ff',
+                '100': '#e0f2fe',
+                '200': '#bae6fd',
+                '300': '#7dd3fc',
+                '400': '#38bdf8',
+                '500': '#0ea5e9',
+                '600': '#0284c7',
+                '700': '#0369a1',
+                '800': '#075985',
+                '900': '#0c4a6e',
+              },
+              slate: {
+                '50': '#f8fafc',
+                '100': '#f1f5f9',
+                '200': '#e2e8f0',
+                '300': '#cbd5e1',
+                '400': '#94a3b8',
+                '500': '#64748b',
+                '600': '#475569',
+                '700': '#334155',
+                '800': '#1e293b',
+                '900': '#0f172a', // Titanium Dark
+              }
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              slideIn: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(0)' },
+              },
+              shimmer: {
+                '0%': { backgroundPosition: '-200% 0' },
+                '100%': { backgroundPosition: '200% 0' }
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' }
+              },
+              progress: {
+                '0%': { width: '0%' },
+                '100%': { width: '100%' }
+              }
+            },
+            animation: {
+              fadeIn: 'fadeIn 0.4s ease-out forwards',
+              slideIn: 'slideIn 0.3s ease-out forwards',
+              shimmer: 'shimmer 3s linear infinite',
+              float: 'float 3s ease-in-out infinite',
+              progress: 'progress 2s ease-out forwards',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        /* Premium Titanium Gradient Background */
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+        min-height: 100vh;
+        color: #1e293b;
+      }
+      
+      /* Modern Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #94a3b8; 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #64748b; 
+      }
+      
+      /* STRICT INPUT STYLING - White Background / Black Text */
+      input, textarea, select {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #cbd5e1;
+        font-size: 16px; /* Prevents zoom on iOS */
+      }
+      input:focus, textarea:focus, select:focus {
+        border-color: #0284c7 !important; /* Brand Blue Focus */
+        outline: 2px solid #bae6fd !important;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.1);
+      }
+      
+      /* Modal Backdrop Blur */
+      .backdrop-blur-sm {
+        backdrop-filter: blur(4px);
+      }
+      
+      /* Premium Gradient Text Class */
+      .text-gradient-gold {
+        background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        background-size: 200% auto;
+        animation: shimmer 5s linear infinite;
+      }
+
+      @media print {
+        body { background: white; }
+        body * { visibility: hidden; }
+        #printable-receipt, #printable-receipt *,
+        #printable-my-ledger, #printable-my-ledger *,
+        #printable-building-ledger, #printable-building-ledger * {
+          visibility: visible;
+        }
+        #printable-receipt,
+        #printable-my-ledger,
+        #printable-building-ledger {
+          position: absolute; left: 0; top: 0; width: 100%;
+        }
+      }
+    </style>
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/jspdf-autotable@latest/dist/jspdf.plugin.autotable.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
+    "path": "https://aistudiocdn.com/path@^0.12.7"
+  }
+}
+</script>
+</head>
+  <body class="font-sans text-slate-800 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
