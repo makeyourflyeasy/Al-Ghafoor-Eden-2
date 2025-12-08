@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { BuildingInfo, Role, User } from '../../types';

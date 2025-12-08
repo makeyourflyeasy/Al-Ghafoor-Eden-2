@@ -213,12 +213,27 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
     const printableRef = useRef<HTMLDivElement>(null);
     const backupInputRef = useRef<HTMLInputElement>(null);
-    const [isDbConnected, setIsDbConnected] = useState(false);
+    const [networkStatus, setNetworkStatus] = useState<'live' | 'offline' | 'error'>('live');
 
     useEffect(() => {
-        if (db) {
-            setIsDbConnected(true);
-        }
+        const updateStatus = () => {
+            if (!db) {
+                setNetworkStatus('error');
+            } else if (!navigator.onLine) {
+                setNetworkStatus('offline');
+            } else {
+                setNetworkStatus('live');
+            }
+        };
+
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        updateStatus(); // Initial check
+
+        return () => {
+            window.removeEventListener('online', updateStatus);
+            window.removeEventListener('offline', updateStatus);
+        };
     }, []);
     
     const totalPendingDues = useMemo(() => flats.reduce((total, flat) => total + getDuesSummary(flat).totalPending, 0), [flats]);
@@ -417,13 +432,20 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
         <PageHeader title={`Welcome, ${currentUser.ownerName}!`} subtitle="Here's a summary of the building's current status.">
             <div className="flex flex-wrap items-center gap-2">
                 {/* Live Database Indicator */}
-                <div className={`flex items-center px-3 py-1.5 rounded-full shadow-sm border ${isDbConnected ? 'bg-green-50 border-green-200' : 'bg-slate-100 border-slate-300'}`}>
+                <div className={`flex items-center px-3 py-1.5 rounded-full shadow-sm border transition-colors duration-300
+                    ${networkStatus === 'live' ? 'bg-green-50 border-green-200' : 
+                      networkStatus === 'offline' ? 'bg-slate-100 border-slate-300' : 
+                      'bg-red-50 border-red-200'}`}
+                >
                     <span className="relative flex h-3 w-3 mr-2">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDbConnected ? 'bg-green-400' : 'bg-slate-400'}`}></span>
-                      <span className={`relative inline-flex rounded-full h-3 w-3 ${isDbConnected ? 'bg-green-500' : 'bg-slate-500'}`}></span>
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 
+                        ${networkStatus === 'live' ? 'bg-green-400' : networkStatus === 'offline' ? 'bg-slate-400' : 'bg-red-400'}`}></span>
+                      <span className={`relative inline-flex rounded-full h-3 w-3 
+                        ${networkStatus === 'live' ? 'bg-green-500' : networkStatus === 'offline' ? 'bg-slate-500' : 'bg-red-500'}`}></span>
                     </span>
-                    <span className={`text-xs font-bold uppercase tracking-wide ${isDbConnected ? 'text-green-700' : 'text-slate-500'}`}>
-                        {isDbConnected ? 'Database Live' : 'Offline'}
+                    <span className={`text-xs font-bold uppercase tracking-wide 
+                        ${networkStatus === 'live' ? 'text-green-700' : networkStatus === 'offline' ? 'text-slate-500' : 'text-red-700'}`}>
+                        {networkStatus === 'live' ? 'SYSTEM LIVE' : networkStatus === 'offline' ? 'OFFLINE' : 'DB ERROR'}
                     </span>
                 </div>
 
