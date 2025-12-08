@@ -1,6 +1,8 @@
 
 
 
+
+
 import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { BuildingInfo, Role, User } from '../../types';
@@ -283,17 +285,22 @@ const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, t
                         </div>
                     </Card>
 
-                    <Card title="How to Fix 'Permission Denied' Error">
+                    <Card title="How to Fix 'Permission Denied' (ڈیٹا لائیو کرنے کا طریقہ)">
                         <div className="prose prose-sm text-slate-600">
-                            <p>If your data is not saving or disappears on reload, your Firestore Security Rules are likely blocking access.</p>
-                            <ol className="list-decimal pl-5 space-y-1 mt-2">
-                                <li>Go to <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-brand-600 underline">Firebase Console</a>.</li>
-                                <li>Select your project (e.g., <strong>al-ghafoor-eden</strong>).</li>
-                                <li>In the left menu, click <strong>Build &gt; Firestore Database</strong>.</li>
-                                <li>Click the <strong>Rules</strong> tab at the top.</li>
-                                <li>Delete everything there and paste the code below to allow public access (development mode):</li>
-                            </ol>
-                            <div className="mt-4 bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto">
+                            <p>اگر آپ کا ڈیٹا ریفریش کرنے پر غائب ہو جاتا ہے یا دوسری ڈیوائس پر نظر نہیں آتا، تو آپ کو Firebase Console میں جا کر <strong>Rules</strong> تبدیل کرنے ہوں گے۔</p>
+                            
+                            <div className="bg-amber-50 p-4 border-l-4 border-amber-500 rounded my-4">
+                                <h5 className="font-bold text-amber-800">ہدایات (Urdu Instructions):</h5>
+                                <ol className="list-decimal pl-5 space-y-2 mt-2 text-amber-900">
+                                    <li><a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-brand-600 underline font-bold">Firebase Console</a> ویب سائٹ پر جائیں۔</li>
+                                    <li>اپنے پروجیکٹ (e.g., <strong>alghafooreden</strong>) پر کلک کریں۔</li>
+                                    <li>الٹے ہاتھ والے مینو میں <strong>Build</strong> اور پھر <strong>Firestore Database</strong> پر کلک کریں۔</li>
+                                    <li>اوپر <strong>Rules</strong> کے ٹیب پر کلک کریں۔</li>
+                                    <li>وہاں موجود کوڈ کو ہٹا کر نیچے دیا گیا کوڈ پیسٹ کریں اور <strong>Publish</strong> کا بٹن دبائیں۔</li>
+                                </ol>
+                            </div>
+
+                            <div className="mt-4 bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto relative">
 <pre>{`rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -303,7 +310,7 @@ service cloud.firestore {
   }
 }`}</pre>
                             </div>
-                            <p className="mt-4">Click <strong>Publish</strong> at the top of the Rules editor to save changes. Then refresh this page.</p>
+                            <p className="mt-4 text-sm text-slate-500">یہ سیٹنگ کرنے کے بعد آپ کا ڈیٹا تمام ڈیوائسز پر فوری (Live) اپڈیٹ ہونا شروع ہو جائے گا۔</p>
                         </div>
                     </Card>
                 </div>
