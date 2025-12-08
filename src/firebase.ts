@@ -1,44 +1,29 @@
 
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 
-// Helper to safely access environment variables
-const getEnvVar = (key: string) => {
-  try {
-    // Check if import.meta.env exists (Vite standard)
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env) {
-      // @ts-ignore
-      return import.meta.env[key];
-    }
-  } catch (e) {
-    // Ignore errors
-  }
-  return undefined;
-};
-
-// Your web app's configuration
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: getEnvVar("VITE_FIREBASE_API_KEY"),
-  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN"),
-  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID"),
-  storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET"),
-  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID"),
-  appId: getEnvVar("VITE_FIREBASE_APP_ID")
+  apiKey: "AIzaSyDYIyr_ORQ-V28gXZGPaiyjCeOcj55uE70",
+  authDomain: "alghafooreden-7bc6b.firebaseapp.com",
+  projectId: "alghafooreden-7bc6b",
+  storageBucket: "alghafooreden-7bc6b.firebasestorage.app",
+  messagingSenderId: "194934662024",
+  appId: "1:194934662024:web:0f2eff5a10cbc1943f103d",
+  measurementId: "G-TYYPW61MDM"
 };
 
-// Initialize Firebase only if config is present
+// Initialize Firebase
 let app;
 let db: any = null;
+let analytics;
 
 try {
-    if (firebaseConfig.apiKey) {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        console.log("Firebase connected successfully.");
-    } else {
-        console.warn("Firebase config missing (API Key not found). App running in LocalStorage mode.");
-    }
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    analytics = getAnalytics(app);
+    console.log("Firebase connected successfully.");
 } catch (error) {
     console.error("Firebase initialization error:", error);
 }
