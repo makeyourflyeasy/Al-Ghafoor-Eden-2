@@ -1,4 +1,5 @@
 
+
 export enum Role {
   Resident = 'Resident',
   Admin = 'Admin',
@@ -241,4 +242,11 @@ export interface CashTransfer {
   date: string;
   status: 'Pending' | 'Confirmed';
   confirmedOn?: string;
+}
+
+declare global {
+  interface Window {
+    jspdf: any;
+    html2canvas: any;
+  }
 }

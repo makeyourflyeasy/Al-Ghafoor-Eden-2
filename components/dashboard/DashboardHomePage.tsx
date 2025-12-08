@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext';
 import { Role, User, Flat, DuesStatus } from '../../types';
 import { Card, formatCurrency, getDuesSummary, Modal, PageHeader, StatCard } from '../Dashboard';
 import { BuildingIcon, CheckCircleIcon, DownloadIcon, ExclamationCircleIcon, ReceiptTaxIcon, UsersIcon, WhatsAppIcon, CashIcon, KeyIcon, CloudArrowDownIcon, CloudArrowUpIcon, DatabaseIcon, ShieldCheckIcon, LockIcon } from '../Icons';
+import { db } from '../../firebase';
 
 const PrintableHomePage: React.FC = () => {
     const { flats, users, presidentMessage } = useData();
@@ -212,6 +213,13 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
     const printableRef = useRef<HTMLDivElement>(null);
     const backupInputRef = useRef<HTMLInputElement>(null);
+    const [isDbConnected, setIsDbConnected] = useState(false);
+
+    useEffect(() => {
+        if (db) {
+            setIsDbConnected(true);
+        }
+    }, []);
     
     const totalPendingDues = useMemo(() => flats.reduce((total, flat) => total + getDuesSummary(flat).totalPending, 0), [flats]);
     
@@ -407,18 +415,31 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
     <div>
         {showWhatsAppModal && <WhatsAppMessageModal onClose={() => setShowWhatsAppModal(false)} />}
         <PageHeader title={`Welcome, ${currentUser.ownerName}!`} subtitle="Here's a summary of the building's current status.">
-            {currentUser.role === Role.Admin && (
-                 <div className="flex items-center space-x-2">
-                    <button onClick={() => setShowWhatsAppModal(true)} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-green-600 shadow-md">
-                        <WhatsAppIcon className="w-5 h-5 mr-2" />
-                        Create WhatsApp Message
-                    </button>
-                    <button onClick={handleDownloadHomePage} disabled={isPrinting} className="flex items-center bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-700 shadow-md disabled:bg-slate-400 disabled:cursor-wait">
-                        <DownloadIcon className="w-5 h-5 mr-2" />
-                        {isPrinting ? 'Generating...' : 'Download Home Page'}
-                    </button>
-                 </div>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+                {/* Live Database Indicator */}
+                <div className={`flex items-center px-3 py-1.5 rounded-full shadow-sm border ${isDbConnected ? 'bg-green-50 border-green-200' : 'bg-slate-100 border-slate-300'}`}>
+                    <span className="relative flex h-3 w-3 mr-2">
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDbConnected ? 'bg-green-400' : 'bg-slate-400'}`}></span>
+                      <span className={`relative inline-flex rounded-full h-3 w-3 ${isDbConnected ? 'bg-green-500' : 'bg-slate-500'}`}></span>
+                    </span>
+                    <span className={`text-xs font-bold uppercase tracking-wide ${isDbConnected ? 'text-green-700' : 'text-slate-500'}`}>
+                        {isDbConnected ? 'Database Live' : 'Offline'}
+                    </span>
+                </div>
+
+                {currentUser.role === Role.Admin && (
+                     <>
+                        <button onClick={() => setShowWhatsAppModal(true)} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-green-600 shadow-md">
+                            <WhatsAppIcon className="w-5 h-5 mr-2" />
+                            Create WhatsApp Message
+                        </button>
+                        <button onClick={handleDownloadHomePage} disabled={isPrinting} className="flex items-center bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-700 shadow-md disabled:bg-slate-400 disabled:cursor-wait">
+                            <DownloadIcon className="w-5 h-5 mr-2" />
+                            {isPrinting ? 'Generating...' : 'Download Home Page'}
+                        </button>
+                     </>
+                )}
+            </div>
         </PageHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
              <StatCard title="Total Receivable Dues" value={formatCurrency(totalPendingDues)} icon={<ExclamationCircleIcon className="w-8 h-8"/>} color="red" />
