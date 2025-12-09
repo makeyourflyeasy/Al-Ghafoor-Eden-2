@@ -10,9 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "latest@",
-    "firebase": "^10.8.0",
-    "react": "^18.2.0",
+    "@google/genai": "0.1.0",
+       "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.5.31",
