@@ -7,7 +7,7 @@ import { useData } from '../../context/DataContext';
 import { DeletedItem, Notice, Role, User } from '../../types';
 import { Card, processFileForStorage, formatDate, Modal, PageHeader, CameraScanModal } from '../Dashboard';
 import { PlusCircleIcon, SparklesIcon, TrashIcon, CameraIcon } from '../Icons';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/generative-ai";
 
 const AIGeneratorModal: React.FC<{
     onClose: () => void;

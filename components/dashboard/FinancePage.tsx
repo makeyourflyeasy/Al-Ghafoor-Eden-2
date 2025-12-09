@@ -8,7 +8,7 @@ import { useData } from '../../context/DataContext';
 import { Dues, DuesStatus, Expense, Loan, Payment, Role, User, RecurringExpense } from '../../types';
 import { Card, processFileForStorage, formatCurrency, formatDate, Modal, PageHeader, CameraScanModal, base64ToFile } from '../Dashboard';
 import { CheckCircleIcon, DownloadIcon, PencilIcon, PlusCircleIcon, PrintIcon, ReceiptTaxIcon, TrashIcon, XCircleIcon, SparklesIcon, ClockIcon, CameraIcon } from '../Icons';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/generative-ai";
 
 const PaymentReceiptModal: React.FC<{
     payment: Payment;
