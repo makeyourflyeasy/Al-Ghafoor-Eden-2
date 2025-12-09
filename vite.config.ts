@@ -17,6 +17,7 @@ export default defineConfig({
     strictPort: true
   },
   build: {
+    outDir: 'build', // Output to 'build' folder instead of 'dist'
     chunkSizeWarningLimit: 1600,
   }
 })
