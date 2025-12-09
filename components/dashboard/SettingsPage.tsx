@@ -233,8 +233,8 @@ service cloud.firestore {
                                         If you see this error, you are in the <strong>Realtime Database</strong> section. 
                                         This app uses <strong>Cloud Firestore</strong>.
                                     </p>
-                                    <p className="text-sm text-red-700 mt-2 font-bold">
-                                        Solution: Click "Firestore Database" in the left sidebar menu of Firebase Console.
+                                    <p className="text-sm text-red-700 mt-2 font-bold bg-white p-2 rounded border border-red-200">
+                                        Solution: Look at the left sidebar menu in Firebase Console. Click "Firestore Database" (it might be under the 'Build' dropdown).
                                     </p>
                                 </div>
                             </div>
