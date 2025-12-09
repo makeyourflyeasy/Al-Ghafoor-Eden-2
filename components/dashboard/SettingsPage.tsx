@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { BuildingInfo, Role, User } from '../../types';
 import { Card, Modal, PageHeader, processFileForStorage } from '../Dashboard';
-import { BuildingIcon, CloudIcon, DatabaseIcon, PencilIcon, PlusCircleIcon, TrashIcon, UserIcon, UsersGroupIcon, CameraIcon, CheckCircleIcon, XCircleIcon, DownloadIcon, CloudArrowUpIcon, ClipboardListIcon, ExclamationCircleIcon, ShieldCheckIcon } from '../Icons';
+import { BuildingIcon, CloudIcon, DatabaseIcon, PencilIcon, PlusCircleIcon, TrashIcon, UserIcon, UsersGroupIcon, CameraIcon, CheckCircleIcon, XCircleIcon, DownloadIcon, CloudArrowUpIcon, ClipboardListIcon } from '../Icons';
 
 const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, type?: 'success' | 'error') => void }> = ({ currentUser, showToast }) => {
     const { buildingInfo, setBuildingInfo, users, setUsers, generateBackupData, restoreBackupData } = useData();
@@ -25,6 +25,19 @@ const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, t
         const base64 = await processFileForStorage(file);
         setTempBuildingInfo(prev => ({ ...prev, logo: base64 }));
     };
+
+    const generatedFlatList = useMemo(() => {
+        const { totalFloors, flatsPerFloor } = tempBuildingInfo;
+        let list = [];
+        for (let f = 1; f <= totalFloors; f++) {
+            const floorFlats = [];
+            for (let n = 1; n <= flatsPerFloor; n++) {
+                floorFlats.push(`${f}0${n}`);
+            }
+            list.push(`Floor ${f}: ${floorFlats.join(', ')}`);
+        }
+        return list.join('\n');
+    }, [tempBuildingInfo.totalFloors, tempBuildingInfo.flatsPerFloor]);
 
     // --- USER MANAGEMENT LOGIC ---
     const staffRoles = [Role.Admin, Role.Accountant, Role.AccountsChecker, Role.Guard, Role.Sweeper, Role.LiftMechanic];
@@ -104,12 +117,10 @@ const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, t
         reader.readAsText(backupFile);
     };
 
-    // Slightly more specific rule to reduce noise, though still "public" effectively for the app
     const firestoreRules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only allow access to this app's data collection
-    match /app_data_v2_titanium/{document=**} {
+    match /{document=**} {
       allow read, write: if true;
     }
   }
@@ -181,146 +192,161 @@ service cloud.firestore {
                         </div>
 
                         <div className="md:col-span-2 border-t pt-4 mt-2">
-                            <h4 className="font-bold text-slate-800 mb-3">Floor Configuration</h4>
+                            <h4 className="font-bold text-slate-800 mb-3">Floor Configuration (AI Generation Logic)</h4>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                  <div><label className="block text-xs font-bold text-slate-500">Total Floors</label><input type="number" disabled={!isEditingInfo} value={tempBuildingInfo.totalFloors} onChange={e => setTempBuildingInfo({...tempBuildingInfo, totalFloors: parseInt(e.target.value)})} className="w-full mt-1 p-2 border rounded" /></div>
                                  <div><label className="block text-xs font-bold text-slate-500">Flats per Floor</label><input type="number" disabled={!isEditingInfo} value={tempBuildingInfo.flatsPerFloor} onChange={e => setTempBuildingInfo({...tempBuildingInfo, flatsPerFloor: parseInt(e.target.value)})} className="w-full mt-1 p-2 border rounded" /></div>
                             </div>
+                            <div className="bg-slate-100 p-3 rounded text-xs font-mono text-slate-600 whitespace-pre-wrap h-32 overflow-y-auto border">
+                                {generatedFlatList}
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1">* This logic is used when resetting or generating new flats.</p>
                         </div>
                     </div>
                 </Card>
             )}
 
-            {/* --- CLOUD TAB --- */}
-            {activeTab === 'cloud' && (
-                <div className="space-y-6">
-                    <Card title="Firebase Cloud Connection">
-                        <div className="flex items-center mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <CloudIcon className="w-8 h-8 text-blue-600 mr-3" />
-                            <div>
-                                <h3 className="font-bold text-blue-900">Sync Status</h3>
-                                <p className="text-sm text-blue-700">Enable cloud database to sync data across all admin and guard devices.</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div>
-                                <h4 className="font-bold text-slate-800 mb-2">Instructions</h4>
-                                <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
-                                    <li>Go to <a href="https://console.firebase.google.com/" target="_blank" className="text-brand-600 underline font-bold">Firebase Console</a>.</li>
-                                    <li>Open project <strong>alghafooreden</strong>.</li>
-                                    <li>Click <strong>Build &gt; Firestore Database</strong> in the side menu.</li>
-                                    <li className="text-red-600 font-bold text-xs">NOT "Realtime Database"</li>
-                                    <li>Click the <strong>Rules</strong> tab.</li>
-                                    <li>Paste the code and click <strong>Publish</strong>.</li>
-                                </ol>
-                            </div>
-                            
-                            <div className="flex flex-col">
-                                <h4 className="font-bold text-slate-800 mb-2">Rules Code</h4>
-                                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto relative flex-1">
-                                    <pre>{firestoreRules}</pre>
-                                    <button onClick={handleCopyRules} className="absolute top-2 right-2 p-2 bg-white/10 hover:bg-white/20 rounded text-white flex items-center">
-                                        <ClipboardListIcon className="w-4 h-4 mr-1" /> Copy
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
-                            <div className="flex items-start">
-                                <ShieldCheckIcon className="w-6 h-6 text-amber-600 mr-3 mt-1 flex-shrink-0" />
-                                <div>
-                                    <h4 className="font-bold text-amber-800">Regarding the "Public Access" Warning</h4>
-                                    <p className="text-sm text-amber-700 mt-1">
-                                        Firebase will show a warning: <em>"Your security rules are defined as public, so anyone can steal, modify, or delete data."</em>
-                                    </p>
-                                    <p className="text-sm text-amber-700 mt-2 font-medium">
-                                        <strong>This is expected for this app.</strong> Since the app uses its own internal user management system instead of Google Login, the database connection must be open to the app.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card title="Troubleshooting Common Errors">
-                        <div className="space-y-4">
-                            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <div className="flex items-center mb-2">
-                                    <ExclamationCircleIcon className="w-5 h-5 text-red-600 mr-2" />
-                                    <h4 className="font-bold text-red-800 text-sm">Error: "Line 1: Parse error"</h4>
-                                </div>
-                                <p className="text-sm text-slate-600">
-                                    This happens if you paste the code into <strong>Realtime Database</strong>.
-                                    <br/><br/>
-                                    <strong>Solution:</strong> Look at the left sidebar. Click <strong>Firestore Database</strong> (it usually has an orange/cloud icon).
-                                </p>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
+            {/* --- USERS TAB --- */}
+            {activeTab === 'users' && (
+                <Card title="Staff User Management" titleAction={
+                    <button onClick={() => { setEditingUser({ id: '', ownerName: '', role: Role.Guard, password: '', residentType: 'Owner' } as User); setShowUserModal(true); }} className="bg-brand-600 text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-brand-700 flex items-center"><PlusCircleIcon className="w-4 h-4 mr-1"/> Add User</button>
+                }>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Role</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">ID / Password</th>
+                                    <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Contact</th>
+                                    <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-slate-200">
+                                {staffUsers.map(u => (
+                                    <tr key={u.id} className="hover:bg-slate-50">
+                                        <td className="px-6 py-4 whitespace-nowrap flex items-center">
+                                            <div className="h-8 w-8 rounded-full bg-slate-200 overflow-hidden mr-3">
+                                                {u.ownerPic ? <img src={u.ownerPic} className="h-full w-full object-cover"/> : <UserIcon className="p-1 text-slate-400"/>}
+                                            </div>
+                                            <span className="font-medium text-slate-900">{u.ownerName}</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{u.role}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">{u.id} / {u.password}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{u.contact || '-'}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                                            <button onClick={() => { setEditingUser(u); setShowUserModal(true); }} className="text-brand-600 hover:text-brand-900"><PencilIcon className="w-5 h-5"/></button>
+                                            {u.id !== 'admin' && <button onClick={() => handleDeleteUser(u.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
             )}
 
             {/* --- BACKUP TAB --- */}
             {activeTab === 'backup' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card title="Download Backup">
-                        <p className="text-slate-600 text-sm mb-4">Save a complete copy of all your data (Users, Payments, Expenses) to your computer.</p>
-                        <button onClick={handleDownloadBackup} className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">
-                            <DownloadIcon className="w-5 h-5 mr-2" /> Download JSON Backup
-                        </button>
-                    </Card>
-
-                    <Card title="Restore from Backup">
-                        <p className="text-slate-600 text-sm mb-4">Restore data from a previously saved JSON file. <strong className="text-red-600">Warning: This will replace current data.</strong></p>
-                        <div className="space-y-3">
-                            <input type="file" accept=".json" onChange={e => setBackupFile(e.target.files ? e.target.files[0] : null)} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"/>
-                            <button onClick={handleRestoreBackup} disabled={!backupFile} className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed">
-                                <CloudArrowUpIcon className="w-5 h-5 mr-2" /> Restore Data
+                        <div className="text-center p-6">
+                            <DatabaseIcon className="w-16 h-16 mx-auto text-brand-600 mb-4" />
+                            <p className="text-slate-600 mb-6">Download a full copy of the entire application database (Users, Flats, Finance, History) as a secure JSON file.</p>
+                            <button onClick={handleDownloadBackup} className="w-full py-3 bg-brand-600 text-white rounded-lg font-bold hover:bg-brand-700 flex items-center justify-center">
+                                <DownloadIcon className="w-5 h-5 mr-2" /> Download Full Backup
                             </button>
                         </div>
                     </Card>
-                </div>
-            )}
-
-            {/* --- USERS TAB --- */}
-            {activeTab === 'users' && (
-                <div>
-                    <Card title="Staff & Management Accounts" titleAction={<button onClick={() => { setEditingUser({id:'', role:Role.Guard, ownerName:'', password:'', residentType:'Owner'}); setShowUserModal(true); }} className="text-brand-600 hover:underline text-sm font-bold flex items-center"><PlusCircleIcon className="w-4 h-4 mr-1"/> Add New</button>}>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200">
-                                <thead className="bg-slate-50"><tr><th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Name</th><th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Role</th><th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">ID</th><th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Password</th><th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase">Actions</th></tr></thead>
-                                <tbody className="bg-white divide-y divide-slate-200">
-                                    {staffUsers.map(user => (
-                                        <tr key={user.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{user.ownerName}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-slate-500">{user.role}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">{user.id}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-slate-500 font-mono text-xs">{user.password}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button onClick={() => { setEditingUser(user); setShowUserModal(true); }} className="text-brand-600 hover:text-brand-900 mr-3"><PencilIcon className="w-4 h-4"/></button>
-                                                <button onClick={() => handleDeleteUser(user.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-4 h-4"/></button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    <Card title="Restore Backup">
+                        <div className="text-center p-6">
+                            <CloudArrowUpIcon className="w-16 h-16 mx-auto text-green-600 mb-4" />
+                            <p className="text-slate-600 mb-6">Upload a previously downloaded JSON backup file to restore the system. <span className="text-red-600 font-bold">Warning: This replaces all current data.</span></p>
+                            <div className="flex space-x-2">
+                                <input type="file" accept=".json" onChange={e => setBackupFile(e.target.files ? e.target.files[0] : null)} className="flex-1 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"/>
+                                <button onClick={handleRestoreBackup} disabled={!backupFile} className="px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">Restore</button>
+                            </div>
                         </div>
                     </Card>
                 </div>
             )}
 
-            {showUserModal && editingUser && (
-                <Modal onClose={() => setShowUserModal(false)} title={users.some(u => u.id === editingUser.id && u !== editingUser) ? 'Edit User' : 'Add User'}>
-                    <form onSubmit={(e) => { e.preventDefault(); handleSaveUser(editingUser); }}>
-                        <div className="p-6 space-y-4">
-                            <div><label className="block text-sm font-bold text-slate-700">Name</label><input required value={editingUser.ownerName} onChange={e => setEditingUser({...editingUser, ownerName: e.target.value})} className="w-full p-2 border rounded"/></div>
-                            <div><label className="block text-sm font-bold text-slate-700">Role</label><select value={editingUser.role} onChange={e => setEditingUser({...editingUser, role: e.target.value as Role})} className="w-full p-2 border rounded">{staffRoles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
-                            <div><label className="block text-sm font-bold text-slate-700">User ID (Login)</label><input required value={editingUser.id} onChange={e => setEditingUser({...editingUser, id: e.target.value})} disabled={users.some(u => u.id === editingUser?.id)} className="w-full p-2 border rounded disabled:bg-slate-100"/></div>
-                            <div><label className="block text-sm font-bold text-slate-700">Password</label><input required value={editingUser.password} onChange={e => setEditingUser({...editingUser, password: e.target.value})} className="w-full p-2 border rounded"/></div>
-                            <div><label className="block text-sm font-bold text-slate-700">Monthly Salary (If applicable)</label><input type="number" value={editingUser.salary || ''} onChange={e => setEditingUser({...editingUser, salary: parseFloat(e.target.value)})} className="w-full p-2 border rounded"/></div>
+            {/* --- CLOUD TAB --- */}
+            {activeTab === 'cloud' && (
+                <div className="space-y-6">
+                    <Card title="Cloud Connectivity Status">
+                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between mb-6">
+                            <div className="flex items-center">
+                                <div className="h-3 w-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+                                <div>
+                                    <p className="font-bold text-green-800">Connected & Syncing</p>
+                                    <p className="text-xs text-green-600">Data is automatically syncing to the local database.</p>
+                                </div>
+                            </div>
+                            <CloudIcon className="w-8 h-8 text-green-300" />
                         </div>
-                        <div className="bg-slate-100 p-4 text-right rounded-b-lg">
+                    </Card>
+
+                    <Card title="How to Fix 'Permission Denied' (ڈیٹا لائیو کرنے کا طریقہ)">
+                        <div className="prose prose-sm text-slate-600">
+                            <p>اگر آپ کا ڈیٹا ریفریش کرنے پر غائب ہو جاتا ہے یا دوسری ڈیوائس پر نظر نہیں آتا، تو آپ کو Firebase Console میں جا کر <strong>Rules</strong> تبدیل کرنے ہوں گے۔</p>
+                            
+                            <div className="bg-amber-50 p-4 border-l-4 border-amber-500 rounded my-4">
+                                <h5 className="font-bold text-amber-800">ہدایات (Urdu Instructions):</h5>
+                                <ol className="list-decimal pl-5 space-y-2 mt-2 text-amber-900 font-semibold">
+                                    <li><a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-brand-600 underline font-bold">Firebase Console</a> ویب سائٹ پر جائیں۔</li>
+                                    <li>اپنے پروجیکٹ (e.g., <strong>alghafooreden</strong>) پر کلک کریں۔</li>
+                                    <li>الٹے ہاتھ والے مینو سے <strong>Build</strong> اور پھر <strong>Firestore Database</strong> پر کلک کریں۔ <br/> <span className="text-red-600">(نوٹ: "Realtime Database" پر کلک نہ کریں، وہ غلط جگہ ہے)</span>.</li>
+                                    <li>اوپر <strong>Rules</strong> کے ٹیب پر کلک کریں۔</li>
+                                    <li>وہاں موجود پرانے کوڈ کو ہٹا کر نیچے دیا گیا کوڈ پیسٹ کریں اور <strong>Publish</strong> کا بٹن دبائیں۔</li>
+                                </ol>
+                            </div>
+
+                            <div className="relative mt-4 bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto">
+                                <pre>{firestoreRules}</pre>
+                                <button 
+                                    onClick={handleCopyRules} 
+                                    className="absolute top-2 right-2 px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded flex items-center"
+                                >
+                                    <ClipboardListIcon className="w-4 h-4 mr-1"/> Copy Code
+                                </button>
+                            </div>
+                            <p className="mt-4 text-sm text-slate-500">یہ سیٹنگ کرنے کے بعد آپ کا ڈیٹا تمام ڈیوائسز پر فوری (Live) اپڈیٹ ہونا شروع ہو جائے گا۔</p>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* User Modal */}
+            {showUserModal && (
+                <Modal onClose={() => setShowUserModal(false)} title={editingUser?.id ? "Edit User" : "Add New User"} size="lg">
+                    <form onSubmit={(e) => {
+                        e.preventDefault();
+                        if(editingUser) handleSaveUser(editingUser);
+                    }}>
+                        <div className="p-6 space-y-4">
+                            <div className="flex flex-col items-center mb-4">
+                                <div className="w-24 h-24 bg-slate-200 rounded-full overflow-hidden relative group">
+                                    {editingUser?.ownerPic ? <img src={editingUser.ownerPic} className="w-full h-full object-cover" /> : <UserIcon className="p-4 text-slate-400 w-full h-full"/>}
+                                    <label className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                                        <CameraIcon className="w-8 h-8 text-white"/>
+                                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files && handleLogoChange(e.target.files[0]).then(b64 => setEditingUser(prev => prev ? {...prev, ownerPic: b64} : null))} />
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label className="block text-sm font-medium text-slate-700">Name</label><input required value={editingUser?.ownerName || ''} onChange={e => setEditingUser(prev => prev ? {...prev, ownerName: e.target.value} : null)} className="w-full mt-1 p-2 border rounded" /></div>
+                                <div><label className="block text-sm font-medium text-slate-700">Role</label><select value={editingUser?.role} onChange={e => setEditingUser(prev => prev ? {...prev, role: e.target.value as Role} : null)} className="w-full mt-1 p-2 border rounded">{staffRoles.map(r => <option key={r} value={r}>{r}</option>)}</select></div>
+                                <div><label className="block text-sm font-medium text-slate-700">User ID</label><input required value={editingUser?.id || ''} onChange={e => setEditingUser(prev => prev ? {...prev, id: e.target.value} : null)} disabled={!!users.find(u => u.id === editingUser?.id && users.includes(editingUser!))} className="w-full mt-1 p-2 border rounded disabled:bg-slate-100" /></div>
+                                <div><label className="block text-sm font-medium text-slate-700">Password</label><input required value={editingUser?.password || ''} onChange={e => setEditingUser(prev => prev ? {...prev, password: e.target.value} : null)} className="w-full mt-1 p-2 border rounded" /></div>
+                                <div><label className="block text-sm font-medium text-slate-700">Contact</label><input value={editingUser?.contact || ''} onChange={e => setEditingUser(prev => prev ? {...prev, contact: e.target.value} : null)} className="w-full mt-1 p-2 border rounded" /></div>
+                                {[Role.Guard, Role.Accountant, Role.Sweeper, Role.LiftMechanic].includes(editingUser?.role as any) && (
+                                    <div><label className="block text-sm font-medium text-slate-700">Monthly Salary</label><input type="number" value={editingUser?.salary || ''} onChange={e => setEditingUser(prev => prev ? {...prev, salary: parseFloat(e.target.value)} : null)} className="w-full mt-1 p-2 border rounded" /></div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="bg-slate-200 px-6 py-4 text-right rounded-b-lg">
+                            <button type="button" onClick={() => setShowUserModal(false)} className="mr-2 px-4 py-2 text-slate-600 font-bold hover:bg-slate-300 rounded">Cancel</button>
                             <button type="submit" className="px-4 py-2 bg-brand-600 text-white font-bold rounded hover:bg-brand-700">Save User</button>
                         </div>
                     </form>

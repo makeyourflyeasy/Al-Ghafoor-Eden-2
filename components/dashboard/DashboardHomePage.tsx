@@ -423,18 +423,18 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
                     <div>
                         <h2 className="text-2xl font-extrabold uppercase mb-2">Database Permission Denied (Locked)</h2>
                         <p className="text-lg font-semibold mb-4">
-                            آپ کا ڈیٹا بیس گوگل کی سیکیورٹی کی وجہ سے لاک ہے۔ ڈیٹا دوسری ڈیوائسز پر نظر نہیں آئے گا جب تک آپ اسے ٹھیک نہیں کرتے۔
+                            آپ کا ڈیٹا بیس گوگل کی سیکیورٹی کی وجہ سے لاک ہے۔ آپ "Realtime Database" دیکھ رہے ہیں جبکہ یہ ایپ "Firestore Database" استعمال کرتی ہے۔
                             <br/>
-                            <span className="text-sm font-normal opacity-90">Your database is currently locked. Data will not sync between devices until you update the Security Rules.</span>
+                            <span className="text-sm font-normal opacity-90">Your database is locked. You are looking at "Realtime Database" but this app uses "Cloud Firestore".</span>
                         </p>
                         <div className="bg-red-800 p-4 rounded-lg">
-                            <h3 className="font-bold underline mb-2">How to Fix (اسے کیسے ٹھیک کریں):</h3>
-                            <p className="text-sm mb-3">
-                                Go to Settings > Cloud Connectivity for detailed instructions and the correct code.
-                            </p>
-                            <a href="#" className="inline-block bg-white text-red-900 px-4 py-2 rounded-lg font-bold hover:bg-gray-200">
-                                Go to Settings
-                            </a>
+                            <h3 className="font-bold underline mb-2">Correct Steps (درست طریقہ):</h3>
+                            <ol className="list-decimal list-inside space-y-1 text-sm md:text-base">
+                                <li>In Firebase Console, click <strong>Build</strong> in the left menu.</li>
+                                <li>Click <strong>Firestore Database</strong> (NOT Realtime Database).</li>
+                                <li>If it says "Create Database", click it -> Select "nam5 (us-central)" -> Enable.</li>
+                                <li>Go to the <strong>Rules</strong> tab in Firestore and change <code>false</code> to <code>true</code>.</li>
+                            </ol>
                         </div>
                     </div>
                 </div>
