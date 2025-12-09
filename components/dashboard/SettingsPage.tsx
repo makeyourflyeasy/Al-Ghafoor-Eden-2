@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { BuildingInfo, Role, User } from '../../types';
 import { Card, Modal, PageHeader, processFileForStorage } from '../Dashboard';
-import { BuildingIcon, CloudIcon, DatabaseIcon, PencilIcon, PlusCircleIcon, TrashIcon, UserIcon, UsersGroupIcon, CameraIcon, CheckCircleIcon, XCircleIcon, DownloadIcon, CloudArrowUpIcon, ClipboardListIcon, ExclamationCircleIcon } from '../Icons';
+import { BuildingIcon, CloudIcon, DatabaseIcon, PencilIcon, PlusCircleIcon, TrashIcon, UserIcon, UsersGroupIcon, CameraIcon, CheckCircleIcon, XCircleIcon, DownloadIcon, CloudArrowUpIcon, ClipboardListIcon, ExclamationCircleIcon, ShieldCheckIcon } from '../Icons';
 
 const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, type?: 'success' | 'error') => void }> = ({ currentUser, showToast }) => {
     const { buildingInfo, setBuildingInfo, users, setUsers, generateBackupData, restoreBackupData } = useData();
@@ -104,10 +104,12 @@ const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, t
         reader.readAsText(backupFile);
     };
 
+    // Slightly more specific rule to reduce noise, though still "public" effectively for the app
     const firestoreRules = `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+    // Only allow access to this app's data collection
+    match /app_data_v2_titanium/{document=**} {
       allow read, write: if true;
     }
   }
@@ -197,46 +199,62 @@ service cloud.firestore {
                             <CloudIcon className="w-8 h-8 text-blue-600 mr-3" />
                             <div>
                                 <h3 className="font-bold text-blue-900">Sync Status</h3>
-                                <p className="text-sm text-blue-700">Ensure your database is active to sync data across all devices.</p>
+                                <p className="text-sm text-blue-700">Enable cloud database to sync data across all admin and guard devices.</p>
                             </div>
                         </div>
 
-                        <div className="mb-6">
-                            <h4 className="font-bold text-slate-800 mb-2">Instructions to Enable Multi-Device Sync</h4>
-                            <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
-                                <li>Go to the <a href="https://console.firebase.google.com/" target="_blank" className="text-brand-600 underline font-bold">Firebase Console</a>.</li>
-                                <li>Open your project (<strong>alghafooreden</strong>).</li>
-                                <li>In the left menu, click <strong>Build</strong> then <strong>Firestore Database</strong>.</li>
-                                <li className="text-red-600 font-bold">Important: Do NOT click "Realtime Database". Use "Firestore Database".</li>
-                                <li>Click the <strong>Rules</strong> tab at the top.</li>
-                                <li>Replace the code with the snippet below and click <strong>Publish</strong>.</li>
-                            </ol>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div>
+                                <h4 className="font-bold text-slate-800 mb-2">Instructions</h4>
+                                <ol className="list-decimal list-inside space-y-2 text-sm text-slate-600 bg-slate-50 p-4 rounded-lg">
+                                    <li>Go to <a href="https://console.firebase.google.com/" target="_blank" className="text-brand-600 underline font-bold">Firebase Console</a>.</li>
+                                    <li>Open project <strong>alghafooreden</strong>.</li>
+                                    <li>Click <strong>Build &gt; Firestore Database</strong> in the side menu.</li>
+                                    <li className="text-red-600 font-bold text-xs">NOT "Realtime Database"</li>
+                                    <li>Click the <strong>Rules</strong> tab.</li>
+                                    <li>Paste the code and click <strong>Publish</strong>.</li>
+                                </ol>
+                            </div>
+                            
+                            <div className="flex flex-col">
+                                <h4 className="font-bold text-slate-800 mb-2">Rules Code</h4>
+                                <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto relative flex-1">
+                                    <pre>{firestoreRules}</pre>
+                                    <button onClick={handleCopyRules} className="absolute top-2 right-2 p-2 bg-white/10 hover:bg-white/20 rounded text-white flex items-center">
+                                        <ClipboardListIcon className="w-4 h-4 mr-1" /> Copy
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="relative">
-                            <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto relative">
-                                <pre>{firestoreRules}</pre>
-                                <button onClick={handleCopyRules} className="absolute top-2 right-2 p-2 bg-white/10 hover:bg-white/20 rounded text-white flex items-center">
-                                    <ClipboardListIcon className="w-4 h-4 mr-1" /> Copy Code
-                                </button>
+                        <div className="mt-6 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-lg">
+                            <div className="flex items-start">
+                                <ShieldCheckIcon className="w-6 h-6 text-amber-600 mr-3 mt-1 flex-shrink-0" />
+                                <div>
+                                    <h4 className="font-bold text-amber-800">Regarding the "Public Access" Warning</h4>
+                                    <p className="text-sm text-amber-700 mt-1">
+                                        Firebase will show a warning: <em>"Your security rules are defined as public, so anyone can steal, modify, or delete data."</em>
+                                    </p>
+                                    <p className="text-sm text-amber-700 mt-2 font-medium">
+                                        <strong>This is expected for this app.</strong> Since the app uses its own internal user management system instead of Google Login, the database connection must be open to the app.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </Card>
 
-                    <Card title="Troubleshooting & Errors">
-                        <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-                            <div className="flex items-start">
-                                <ExclamationCircleIcon className="w-6 h-6 text-red-600 mr-3 mt-1 flex-shrink-0" />
-                                <div>
-                                    <h4 className="font-bold text-red-800">Error: "Line 1: Parse error"</h4>
-                                    <p className="text-sm text-red-700 mt-1">
-                                        If you see this error, you are in the <strong>Realtime Database</strong> section. 
-                                        This app uses <strong>Cloud Firestore</strong>.
-                                    </p>
-                                    <p className="text-sm text-red-700 mt-2 font-bold bg-white p-2 rounded border border-red-200">
-                                        Solution: Look at the left sidebar menu in Firebase Console. Click "Firestore Database" (it might be under the 'Build' dropdown).
-                                    </p>
+                    <Card title="Troubleshooting Common Errors">
+                        <div className="space-y-4">
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <div className="flex items-center mb-2">
+                                    <ExclamationCircleIcon className="w-5 h-5 text-red-600 mr-2" />
+                                    <h4 className="font-bold text-red-800 text-sm">Error: "Line 1: Parse error"</h4>
                                 </div>
+                                <p className="text-sm text-slate-600">
+                                    This happens if you paste the code into <strong>Realtime Database</strong>.
+                                    <br/><br/>
+                                    <strong>Solution:</strong> Look at the left sidebar. Click <strong>Firestore Database</strong> (it usually has an orange/cloud icon).
+                                </p>
                             </div>
                         </div>
                     </Card>

@@ -429,11 +429,12 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
                         </p>
                         <div className="bg-red-800 p-4 rounded-lg">
                             <h3 className="font-bold underline mb-2">How to Fix (اسے کیسے ٹھیک کریں):</h3>
-                            <ol className="list-decimal list-inside space-y-1 text-sm md:text-base">
-                                <li>Go to <strong>Firebase Console</strong> &gt; <strong>Firestore Database</strong> &gt; <strong>Rules</strong>.</li>
-                                <li>Change <code>allow read, write: if false;</code> to <code>allow read, write: if true;</code>.</li>
-                                <li>Click <strong>Publish</strong>.</li>
-                            </ol>
+                            <p className="text-sm mb-3">
+                                Go to Settings > Cloud Connectivity for detailed instructions and the correct code.
+                            </p>
+                            <a href="#" className="inline-block bg-white text-red-900 px-4 py-2 rounded-lg font-bold hover:bg-gray-200">
+                                Go to Settings
+                            </a>
                         </div>
                     </div>
                 </div>
