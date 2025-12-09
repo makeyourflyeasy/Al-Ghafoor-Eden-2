@@ -27,6 +27,7 @@ interface DataContextProps {
     cashTransfers: CashTransfer[]; setCashTransfers: React.Dispatch<React.SetStateAction<CashTransfer[]>>;
     transactionCounter: number; setTransactionCounter: React.Dispatch<React.SetStateAction<number>>;
     buildingInfo: BuildingInfo; setBuildingInfo: React.Dispatch<React.SetStateAction<BuildingInfo>>;
+    connectionError: string | null; // New state for connection health
     getNextTransactionId: () => string;
     handleInitiateCashTransfer: (senderId: string) => void;
     handleAccountantConfirmCashReceipt: (cashTransferId: string, confirmerId: string) => void;
@@ -187,12 +188,42 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [cashTransfers, setCashTransfers] = useSyncState<CashTransfer[]>('v2-titanium-dec1-cash-transfers', INITIAL_CASH_TRANSFERS);
     const [transactionCounter, setTransactionCounter] = useSyncState<number>('v2-titanium-dec1-tx-counter', 1);
     const [buildingInfo, setBuildingInfo] = useSyncState<BuildingInfo>('v2-titanium-dec1-building-info', INITIAL_BUILDING_INFO);
+    
+    const [connectionError, setConnectionError] = useState<string | null>(null);
 
     const getNextTransactionId = useCallback(() => {
         const nextId = `EDEN${transactionCounter.toString().padStart(5, '0')}`;
         setTransactionCounter(prev => prev + 1);
         return nextId;
     }, [transactionCounter, setTransactionCounter]);
+
+    // --- CONNECTION HEALTH CHECK ---
+    useEffect(() => {
+        if (!db) {
+            setConnectionError('no-db');
+            return;
+        }
+        
+        // Subscribe to a lightweight document just to check connection/permission status
+        const docRef = doc(db, "app_data_v2_titanium", "health_check");
+        const unsubscribe = onSnapshot(docRef, 
+            () => {
+                setConnectionError(null); // Success
+            }, 
+            (err) => {
+                console.error("Database health check failed:", err);
+                if (err.code === 'permission-denied') {
+                    setConnectionError('permission-denied');
+                } else if (err.code === 'unavailable' || err.message.includes('offline')) {
+                    setConnectionError('offline');
+                } else {
+                    setConnectionError('unknown');
+                }
+            }
+        );
+
+        return () => unsubscribe();
+    }, []);
 
     // --- AUTOMATION AND WORKFLOW LOGIC ---
     useEffect(() => {
@@ -842,6 +873,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cashTransfers, setCashTransfers,
         transactionCounter, setTransactionCounter,
         buildingInfo, setBuildingInfo,
+        connectionError, // Expose connection error status
         getNextTransactionId,
         handleInitiateCashTransfer,
         handleAccountantConfirmCashReceipt,
@@ -866,7 +898,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         processPayment
     }), [
         users, flats, payments, expenses, recurringExpenses, notices, messages,
-        notifications, tasks, inquiries, tenantTransactions, personalBudgetEntries, contacts, deletedItems, presidentMessage, loans, cashTransfers, transactionCounter, buildingInfo,
+        notifications, tasks, inquiries, tenantTransactions, personalBudgetEntries, contacts, deletedItems, presidentMessage, loans, cashTransfers, transactionCounter, buildingInfo, connectionError,
         setUsers, setFlats, setPayments, setExpenses, setRecurringExpenses, setNotices, setMessages,
         setNotifications, setTasks, setInquiries, setTenantTransactions, setPersonalBudgetEntries, setContacts, setDeletedItems, setPresidentMessage, setLoans, setCashTransfers, setTransactionCounter, setBuildingInfo, getNextTransactionId
     ]);
