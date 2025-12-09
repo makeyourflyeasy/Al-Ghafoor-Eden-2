@@ -3,8 +3,6 @@ import React, { createContext, useState, useEffect, useMemo, useContext, useCall
 import { User, Flat, Payment, Expense, Notice, Message, Notification, Task, Inquiry, TenantTransaction, PersonalBudgetEntry, RecurringExpense, Contact, DeletedItem, DuesStatus, Role, Loan, CashTransfer, Dues, BuildingInfo } from '../types';
 import { INITIAL_USERS, INITIAL_FLATS, INITIAL_PAYMENTS, INITIAL_EXPENSES, INITIAL_RECURRING_EXPENSES, INITIAL_NOTICES, INITIAL_MESSAGES, INITIAL_NOTIFICATIONS, INITIAL_TASKS, INITIAL_INQUIRIES, INITIAL_TENANT_TRANSACTIONS, INITIAL_PERSONAL_BUDGET_ENTRIES, INITIAL_CONTACTS, INITIAL_DELETED_ITEMS, INITIAL_LOANS, INITIAL_CASH_TRANSFERS, INITIAL_BUILDING_INFO } from '../constants';
 import { formatCurrency } from '../components/Dashboard';
-import { db } from '../firebase'; // Import database connection
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 // Define the shape of the context data
 interface DataContextProps {
@@ -27,7 +25,6 @@ interface DataContextProps {
     cashTransfers: CashTransfer[]; setCashTransfers: React.Dispatch<React.SetStateAction<CashTransfer[]>>;
     transactionCounter: number; setTransactionCounter: React.Dispatch<React.SetStateAction<number>>;
     buildingInfo: BuildingInfo; setBuildingInfo: React.Dispatch<React.SetStateAction<BuildingInfo>>;
-    connectionError: string | null; // New state for connection health
     getNextTransactionId: () => string;
     handleInitiateCashTransfer: (senderId: string) => void;
     handleAccountantConfirmCashReceipt: (cashTransferId: string, confirmerId: string) => void;
@@ -64,23 +61,11 @@ export const useData = () => {
     return context;
 };
 
-// Simple debounce utility to delay function execution
-const debounce = (func: (...args: any[]) => void, delay: number) => {
-    let timeoutId: number;
-    return (...args: any[]) => {
-        window.clearTimeout(timeoutId);
-        timeoutId = window.setTimeout(() => {
-            func(...args);
-        }, delay);
-    };
-};
-
 /**
  * useSyncState:
- * 1. Reads from LocalStorage initially (Offline-first / Fast load).
- * 2. Connects to Firebase Firestore if available.
- * 3. Syncs real-time changes from Firestore (Server -> Client).
- * 4. Pushes local changes to Firestore with debounce (Client -> Server).
+ * 1. Reads from LocalStorage initially.
+ * 2. Writes to LocalStorage on change.
+ * Cloud sync removed for Vercel/Local-only deployment.
  */
 function useSyncState<T>(key: string, initialState: T): [T, React.Dispatch<React.SetStateAction<T>>] {
     // 1. Initialize from LocalStorage
@@ -94,72 +79,14 @@ function useSyncState<T>(key: string, initialState: T): [T, React.Dispatch<React
         }
     });
 
-    const isInternalUpdate = useRef(false);
-
-    // 2. Real-time Subscription (Server -> Client)
+    // 2. Persist to LocalStorage
     useEffect(() => {
-        if (!db) return; // Fallback to local-only if no DB
-
-        const docRef = doc(db, "app_data_v2_titanium", key); // Collection: app_data, Doc: key
-        
-        const unsubscribe = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                if (data && data.value !== undefined) {
-                    // Only update if data is different to avoid loops
-                    if (JSON.stringify(data.value) !== JSON.stringify(state)) {
-                        console.log(`Synced ${key} from Cloud.`);
-                        // Prevent this update from triggering a write back to server
-                        isInternalUpdate.current = true; 
-                        setState(data.value);
-                        // Also update local storage for offline backup
-                        localStorage.setItem(key, JSON.stringify(data.value));
-                    }
-                }
-            } else {
-                // If doc doesn't exist on cloud but we have local, we might want to push local?
-                // For now, we just stick to local state.
-                console.log(`Document ${key} does not exist on Cloud yet.`);
-            }
-        }, (error) => {
-            console.error(`Sync error for ${key}:`, error);
-        });
-
-        return () => unsubscribe();
-    }, [key]); // Intentionally exclude 'state' to avoid re-subscribing
-
-    // 3. Push Changes (Client -> Server)
-    const debouncedSave = useCallback(
-        debounce(async (value: T) => {
-            // Save to LocalStorage always
-            try {
-                localStorage.setItem(key, JSON.stringify(value));
-            } catch (error) {
-                console.error(`LocalStorage Error ${key}:`, error);
-            }
-
-            // Save to Firebase if connected and not an internal update
-            if (db && !isInternalUpdate.current) {
-                try {
-                    await setDoc(doc(db, "app_data_v2_titanium", key), { value });
-                    console.log(`Saved ${key} to Cloud.`);
-                } catch (error) {
-                    console.error(`Cloud Save Error ${key}:`, error);
-                }
-            }
-            // Reset internal flag
-            isInternalUpdate.current = false;
-        }, 1000), // 1 second debounce to reduce writes
-        [key]
-    );
-
-    useEffect(() => {
-        if (isInternalUpdate.current) {
-            isInternalUpdate.current = false;
-            return;
+        try {
+            localStorage.setItem(key, JSON.stringify(state));
+        } catch (error) {
+            console.error(`LocalStorage Error ${key}:`, error);
         }
-        debouncedSave(state);
-    }, [state, debouncedSave]);
+    }, [key, state]);
 
     return [state, setState];
 }
@@ -189,41 +116,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [transactionCounter, setTransactionCounter] = useSyncState<number>('v2-titanium-dec1-tx-counter', 1);
     const [buildingInfo, setBuildingInfo] = useSyncState<BuildingInfo>('v2-titanium-dec1-building-info', INITIAL_BUILDING_INFO);
     
-    const [connectionError, setConnectionError] = useState<string | null>(null);
-
     const getNextTransactionId = useCallback(() => {
         const nextId = `EDEN${transactionCounter.toString().padStart(5, '0')}`;
         setTransactionCounter(prev => prev + 1);
         return nextId;
     }, [transactionCounter, setTransactionCounter]);
-
-    // --- CONNECTION HEALTH CHECK ---
-    useEffect(() => {
-        if (!db) {
-            setConnectionError('no-db');
-            return;
-        }
-        
-        // Subscribe to a lightweight document just to check connection/permission status
-        const docRef = doc(db, "app_data_v2_titanium", "health_check");
-        const unsubscribe = onSnapshot(docRef, 
-            () => {
-                setConnectionError(null); // Success
-            }, 
-            (err) => {
-                console.error("Database health check failed:", err);
-                if (err.code === 'permission-denied') {
-                    setConnectionError('permission-denied');
-                } else if (err.code === 'unavailable' || err.message.includes('offline')) {
-                    setConnectionError('offline');
-                } else {
-                    setConnectionError('unknown');
-                }
-            }
-        );
-
-        return () => unsubscribe();
-    }, []);
 
     // --- AUTOMATION AND WORKFLOW LOGIC ---
     useEffect(() => {
@@ -873,7 +770,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cashTransfers, setCashTransfers,
         transactionCounter, setTransactionCounter,
         buildingInfo, setBuildingInfo,
-        connectionError, // Expose connection error status
         getNextTransactionId,
         handleInitiateCashTransfer,
         handleAccountantConfirmCashReceipt,
@@ -898,7 +794,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         processPayment
     }), [
         users, flats, payments, expenses, recurringExpenses, notices, messages,
-        notifications, tasks, inquiries, tenantTransactions, personalBudgetEntries, contacts, deletedItems, presidentMessage, loans, cashTransfers, transactionCounter, buildingInfo, connectionError,
+        notifications, tasks, inquiries, tenantTransactions, personalBudgetEntries, contacts, deletedItems, presidentMessage, loans, cashTransfers, transactionCounter, buildingInfo,
         setUsers, setFlats, setPayments, setExpenses, setRecurringExpenses, setNotices, setMessages,
         setNotifications, setTasks, setInquiries, setTenantTransactions, setPersonalBudgetEntries, setContacts, setDeletedItems, setPresidentMessage, setLoans, setCashTransfers, setTransactionCounter, setBuildingInfo, getNextTransactionId
     ]);

@@ -3,11 +3,11 @@ import React, { useState, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { BuildingInfo, Role, User } from '../../types';
 import { Card, Modal, PageHeader, processFileForStorage } from '../Dashboard';
-import { BuildingIcon, CloudIcon, DatabaseIcon, PencilIcon, PlusCircleIcon, TrashIcon, UserIcon, UsersGroupIcon, CameraIcon, CheckCircleIcon, XCircleIcon, DownloadIcon, CloudArrowUpIcon, ClipboardListIcon } from '../Icons';
+import { BuildingIcon, DatabaseIcon, PencilIcon, PlusCircleIcon, TrashIcon, UserIcon, UsersGroupIcon, CameraIcon, CloudArrowUpIcon, DownloadIcon } from '../Icons';
 
 const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, type?: 'success' | 'error') => void }> = ({ currentUser, showToast }) => {
     const { buildingInfo, setBuildingInfo, users, setUsers, generateBackupData, restoreBackupData } = useData();
-    const [activeTab, setActiveTab] = useState<'general' | 'users' | 'backup' | 'cloud'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'users' | 'backup'>('general');
     const [isEditingInfo, setIsEditingInfo] = useState(false);
     const [tempBuildingInfo, setTempBuildingInfo] = useState<BuildingInfo>(buildingInfo);
     const [showUserModal, setShowUserModal] = useState(false);
@@ -117,20 +117,6 @@ const SettingsPage: React.FC<{ currentUser: User, showToast: (message: string, t
         reader.readAsText(backupFile);
     };
 
-    const firestoreRules = `rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`;
-
-    const handleCopyRules = () => {
-        navigator.clipboard.writeText(firestoreRules);
-        showToast('Rules copied to clipboard!', 'success');
-    };
-
     return (
         <div>
             <PageHeader title="Settings" subtitle="Configure building parameters and manage system access." />
@@ -144,9 +130,6 @@ service cloud.firestore {
                 </button>
                 <button onClick={() => setActiveTab('backup')} className={`px-4 py-2 rounded-md font-semibold text-sm flex items-center whitespace-nowrap ${activeTab === 'backup' ? 'bg-white text-slate-800 shadow' : 'text-slate-600 hover:bg-slate-300'}`}>
                     <DatabaseIcon className="w-4 h-4 mr-2"/> Backup & Restore
-                </button>
-                <button onClick={() => setActiveTab('cloud')} className={`px-4 py-2 rounded-md font-semibold text-sm flex items-center whitespace-nowrap ${activeTab === 'cloud' ? 'bg-white text-slate-800 shadow' : 'text-slate-600 hover:bg-slate-300'}`}>
-                    <CloudIcon className="w-4 h-4 mr-2"/> Cloud Connectivity
                 </button>
             </div>
 
@@ -266,52 +249,6 @@ service cloud.firestore {
                                 <input type="file" accept=".json" onChange={e => setBackupFile(e.target.files ? e.target.files[0] : null)} className="flex-1 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"/>
                                 <button onClick={handleRestoreBackup} disabled={!backupFile} className="px-6 py-2 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 disabled:opacity-50">Restore</button>
                             </div>
-                        </div>
-                    </Card>
-                </div>
-            )}
-
-            {/* --- CLOUD TAB --- */}
-            {activeTab === 'cloud' && (
-                <div className="space-y-6">
-                    <Card title="Cloud Connectivity Status">
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between mb-6">
-                            <div className="flex items-center">
-                                <div className="h-3 w-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
-                                <div>
-                                    <p className="font-bold text-green-800">Connected & Syncing</p>
-                                    <p className="text-xs text-green-600">Data is automatically syncing to the local database.</p>
-                                </div>
-                            </div>
-                            <CloudIcon className="w-8 h-8 text-green-300" />
-                        </div>
-                    </Card>
-
-                    <Card title="How to Fix 'Permission Denied' (ڈیٹا لائیو کرنے کا طریقہ)">
-                        <div className="prose prose-sm text-slate-600">
-                            <p>اگر آپ کا ڈیٹا ریفریش کرنے پر غائب ہو جاتا ہے یا دوسری ڈیوائس پر نظر نہیں آتا، تو آپ کو Firebase Console میں جا کر <strong>Rules</strong> تبدیل کرنے ہوں گے۔</p>
-                            
-                            <div className="bg-amber-50 p-4 border-l-4 border-amber-500 rounded my-4">
-                                <h5 className="font-bold text-amber-800">ہدایات (Urdu Instructions):</h5>
-                                <ol className="list-decimal pl-5 space-y-2 mt-2 text-amber-900 font-semibold">
-                                    <li><a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-brand-600 underline font-bold">Firebase Console</a> ویب سائٹ پر جائیں۔</li>
-                                    <li>اپنے پروجیکٹ (e.g., <strong>alghafooreden</strong>) پر کلک کریں۔</li>
-                                    <li>الٹے ہاتھ والے مینو سے <strong>Build</strong> اور پھر <strong>Firestore Database</strong> پر کلک کریں۔ <br/> <span className="text-red-600">(نوٹ: "Realtime Database" پر کلک نہ کریں، وہ غلط جگہ ہے)</span>.</li>
-                                    <li>اوپر <strong>Rules</strong> کے ٹیب پر کلک کریں۔</li>
-                                    <li>وہاں موجود پرانے کوڈ کو ہٹا کر نیچے دیا گیا کوڈ پیسٹ کریں اور <strong>Publish</strong> کا بٹن دبائیں۔</li>
-                                </ol>
-                            </div>
-
-                            <div className="relative mt-4 bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-xs overflow-x-auto">
-                                <pre>{firestoreRules}</pre>
-                                <button 
-                                    onClick={handleCopyRules} 
-                                    className="absolute top-2 right-2 px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded flex items-center"
-                                >
-                                    <ClipboardListIcon className="w-4 h-4 mr-1"/> Copy Code
-                                </button>
-                            </div>
-                            <p className="mt-4 text-sm text-slate-500">یہ سیٹنگ کرنے کے بعد آپ کا ڈیٹا تمام ڈیوائسز پر فوری (Live) اپڈیٹ ہونا شروع ہو جائے گا۔</p>
                         </div>
                     </Card>
                 </div>

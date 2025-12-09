@@ -4,7 +4,6 @@ import { useData } from '../../context/DataContext';
 import { Role, User, Flat, DuesStatus } from '../../types';
 import { Card, formatCurrency, getDuesSummary, Modal, PageHeader, StatCard } from '../Dashboard';
 import { BuildingIcon, CheckCircleIcon, DownloadIcon, ExclamationCircleIcon, ReceiptTaxIcon, UsersIcon, WhatsAppIcon, CashIcon, KeyIcon, CloudArrowDownIcon, CloudArrowUpIcon, DatabaseIcon, ShieldCheckIcon, LockIcon } from '../Icons';
-import { db } from '../../firebase';
 
 const PrintableHomePage: React.FC = () => {
     const { flats, users, presidentMessage } = useData();
@@ -208,19 +207,12 @@ const CashOnHandSummary: React.FC = () => {
 
 
 const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: string, type?: 'success' | 'error') => void }> = ({ currentUser, showToast }) => {
-    const { flats, setFlats, payments, expenses, presidentMessage, setPresidentMessage, users, generateBackupData, restoreBackupData, createRestorePoint, connectionError } = useData();
+    const { flats, setFlats, payments, expenses, presidentMessage, setPresidentMessage, users, generateBackupData, restoreBackupData, createRestorePoint } = useData();
     const [isPrinting, setIsPrinting] = useState(false);
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
     const printableRef = useRef<HTMLDivElement>(null);
     const backupInputRef = useRef<HTMLInputElement>(null);
 
-    const statusDisplay = useMemo(() => {
-        if (connectionError === 'permission-denied') return { label: 'DB LOCKED', color: 'red', bg: 'bg-red-50' };
-        if (connectionError === 'offline') return { label: 'OFFLINE', color: 'slate', bg: 'bg-slate-100' };
-        if (connectionError === 'no-db') return { label: 'DB ERROR', color: 'red', bg: 'bg-red-50' };
-        return { label: 'SYSTEM LIVE', color: 'green', bg: 'bg-green-50' };
-    }, [connectionError]);
-    
     const totalPendingDues = useMemo(() => flats.reduce((total, flat) => total + getDuesSummary(flat).totalPending, 0), [flats]);
     
     const totalPaymentsThisMonth = useMemo(() => {
@@ -415,45 +407,8 @@ const DashboardHomePage: React.FC<{ currentUser: User, showToast: (message: stri
     <div>
         {showWhatsAppModal && <WhatsAppMessageModal onClose={() => setShowWhatsAppModal(false)} />}
         
-        {/* Critical Alert: Permission Denied */}
-        {connectionError === 'permission-denied' && (
-            <div className="mb-8 bg-red-600 text-white rounded-xl shadow-2xl p-6 border-4 border-red-800 animate-pulse">
-                <div className="flex items-start">
-                    <ExclamationCircleIcon className="w-12 h-12 mr-4 flex-shrink-0" />
-                    <div>
-                        <h2 className="text-2xl font-extrabold uppercase mb-2">Database Permission Denied (Locked)</h2>
-                        <p className="text-lg font-semibold mb-4">
-                            آپ کا ڈیٹا بیس گوگل کی سیکیورٹی کی وجہ سے لاک ہے۔ آپ "Realtime Database" دیکھ رہے ہیں جبکہ یہ ایپ "Firestore Database" استعمال کرتی ہے۔
-                            <br/>
-                            <span className="text-sm font-normal opacity-90">Your database is locked. You are looking at "Realtime Database" but this app uses "Cloud Firestore".</span>
-                        </p>
-                        <div className="bg-red-800 p-4 rounded-lg">
-                            <h3 className="font-bold underline mb-2">Correct Steps (درست طریقہ):</h3>
-                            <ol className="list-decimal list-inside space-y-1 text-sm md:text-base">
-                                <li>In Firebase Console, click <strong>Build</strong> in the left menu.</li>
-                                <li>Click <strong>Firestore Database</strong> (NOT Realtime Database).</li>
-                                <li>If it says "Create Database", click it -> Select "nam5 (us-central)" -> Enable.</li>
-                                <li>Go to the <strong>Rules</strong> tab in Firestore and change <code>false</code> to <code>true</code>.</li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )}
-
         <PageHeader title={`Welcome, ${currentUser.ownerName}!`} subtitle="Here's a summary of the building's current status.">
             <div className="flex flex-wrap items-center gap-2">
-                {/* Live Database Indicator */}
-                <div className={`flex items-center px-3 py-1.5 rounded-full shadow-sm border transition-colors duration-300 ${statusDisplay.bg} border-${statusDisplay.color}-200`}>
-                    <span className="relative flex h-3 w-3 mr-2">
-                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-${statusDisplay.color}-400`}></span>
-                      <span className={`relative inline-flex rounded-full h-3 w-3 bg-${statusDisplay.color}-500`}></span>
-                    </span>
-                    <span className={`text-xs font-bold uppercase tracking-wide text-${statusDisplay.color}-700`}>
-                        {statusDisplay.label}
-                    </span>
-                </div>
-
                 {currentUser.role === Role.Admin && (
                      <>
                         <button onClick={() => setShowWhatsAppModal(true)} className="flex items-center bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-green-600 shadow-md">
