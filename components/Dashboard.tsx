@@ -8,6 +8,11 @@ import {
     LogoutIcon, XCircleIcon, CameraIcon, CheckCircleIcon 
 } from './Icons';
 
+// Library Imports
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import html2canvas from 'html2canvas';
+
 // Import Sub-pages
 import DashboardHomePage from './dashboard/DashboardHomePage';
 import FinancePage from './dashboard/FinancePage';
@@ -62,14 +67,6 @@ export const base64ToFile = (dataurl: string, filename: string): File => {
 };
 
 export const generateEntryPermissionPdf = (flat: Flat, name: string) => {
-    // Correctly access jsPDF from the UMD namespace on window
-    const { jsPDF } = window.jspdf || (window as any).jspdf || {};
-    
-    if (!jsPDF) { 
-        alert("PDF Library not loaded. Please refresh the page."); 
-        return; 
-    }
-    
     const doc = new jsPDF();
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
@@ -103,14 +100,6 @@ export const generateEntryPermissionPdf = (flat: Flat, name: string) => {
 };
 
 export const generateNOCPdf = (user: User, flat: Flat) => {
-    // Correctly access jsPDF from the UMD namespace on window
-    const { jsPDF } = window.jspdf || (window as any).jspdf || {};
-    
-    if (!jsPDF) { 
-        alert("PDF Library not loaded. Please refresh the page."); 
-        return; 
-    }
-    
     const doc = new jsPDF();
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
@@ -129,7 +118,6 @@ export const generateNOCPdf = (user: User, flat: Flat) => {
     doc.text("To Whom It May Concern,", 20, 70);
     
     const name = user.tenantName || user.ownerName;
-    const cnic = user.id; // Using ID as proxy for CNIC if not available in top level
     
     doc.text(`This is to certify that Mr./Ms. ${name}, resident of Flat No. ${flat.label},`, 20, 85);
     doc.text("has cleared all maintenance dues and outstanding bills with the Union Committee.", 20, 92);
